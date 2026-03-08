@@ -1,0 +1,6 @@
+English
+Hindi
+Turkish
+Spanish
+French
+German

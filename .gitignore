@@ -1,0 +1,28 @@
+# AI Shorts Bot GitIgnore
+# AI Bot - Pure Logic Only
+Wav2Lip/checkpoints/
+Wav2Lip/face_detection/
+Wav2Lip/results/
+Wav2Lip/temp/
+gfpgan_core_repo/
+outputs/
+temp/
+advanced_pipeline/
+audio/
+backgrounds/
+cache/
+music/
+sfx/
+*.mp4
+*.mp3
+*.wav
+*.avi
+*.pth
+*.pth.tar
+*.webm
+*.zip
+token.json
+config/
+.env
+__pycache__/
+.DS_Store
