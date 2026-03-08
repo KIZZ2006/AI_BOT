@@ -4,8 +4,10 @@ import subprocess
 import sys
 from concurrent.futures import ProcessPoolExecutor
 
+import shutil
+
 # DYNAMIC FFMPEG LOOKUP (Windows vs Linux)
-FFMPEG_EXE = "ffmpeg"
+FFMPEG_EXE = shutil.which("ffmpeg") or "ffmpeg"
 if os.name == 'nt' and os.path.exists(r"D:\tools\ffmpeg\bin\ffmpeg.exe"):
     FFMPEG_EXE = r"D:\tools\ffmpeg\bin\ffmpeg.exe"
 

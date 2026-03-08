@@ -8,8 +8,21 @@ import shutil
 from rembg import remove, new_session
 from PIL import Image
 
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1)
+# Robust MediaPipe Import
+try:
+    import mediapipe.python.solutions.face_mesh as mp_face_mesh_sol
+    mp_face_mesh = mp_face_mesh_sol
+except (ImportError, AttributeError):
+    try:
+        import mediapipe as mp
+        mp_face_mesh = mp.solutions.face_mesh
+    except:
+        mp_face_mesh = None
+        print("⚠️ Warning: MediaPipe face mesh initialization failed.")
+
+face_mesh = None
+if mp_face_mesh:
+    face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1)
 
 def get_path(rel_path):
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,8 +95,13 @@ def humanize_avatar(host_name="Daniel", duration=12, fps=25):
     h, w = img.shape[:2]
     canvas_h, canvas_w = 1920, 1080
     
-    results = face_mesh.process(cv2.cvtColor(cv2.imread(input_image_path), cv2.COLOR_BGR2RGB))
-    landmarks = results.multi_face_landmarks[0] if results.multi_face_landmarks else None
+    results = None
+    landmarks = None
+    if face_mesh:
+        results = face_mesh.process(cv2.cvtColor(cv2.imread(input_image_path), cv2.COLOR_BGR2RGB))
+        landmarks = results.multi_face_landmarks[0] if results.multi_face_landmarks else None
+    else:
+        print("⚠️ Warning: Skipping blink logic (MediaPipe missing).")
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(master_loop_path, fourcc, fps, (canvas_w, canvas_h))
