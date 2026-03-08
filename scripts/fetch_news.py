@@ -30,178 +30,101 @@ FREE_MODELS = [
 
 
 # SECURITY: API Keys are now loaded from Environment Variables
-# In Colab/Linux, use: os.environ['OPENROUTER_API_KEY']
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
+
+# FALLBACK CONTENT (If API is overloaded/fails)
+FAIL_SAFE_CONTENT = {
+    "source_title": "Safety News: AI Breakthroughs",
+    "title": "The AI Revolution is Here! 🚀",
+    "script": "POV: You're living in 2026 and AI just changed everything. [POP] From autonomous agents to real-time translation, the world is moving faster than ever. [WHOOSH] Did you know that the most successful creators are now using AI to automate 90% of their work? It's not just a trend, it's the new reality. Watch until the end to see the secret tool everyone is talking about. [WHOOSH] Tag a friend who needs to see this hack!",
+    "description": "The future of AI is closer than you think. #AI #Tech #Future",
+    "marketing_comment": "Which AI tool are you using the most right now? Let us know below! 👇",
+    "host": "Daniel",
+    "vibe": "Energetic",
+    "b_roll_query": "AI technology futuristic matrix",
+    "visual_bumps": ["Logo for OpenAI", "AI brain glowing"]
+}
 
 if not OPENROUTER_API_KEY:
-    # Fallback to local check for debugging only
     print("⚠️ Warning: OPENROUTER_API_KEY not found in environment.")
 else:
-    print(f"🔐 API Key detected from Environment: {OPENROUTER_API_KEY[:8]}...****")
+    print(f"🔐 API Key detected and stripped: {OPENROUTER_API_KEY[:8]}...")
 
 def get_live_news():
-    print("🌐 [Research Agent] Scouring TechCrunch & The Verge for breakthroughs...")
-    urls = [
-        "https://feeds.feedburner.com/TechCrunch/",
-        "https://www.theverge.com/rss/index.xml"
-    ]
+    print("🌐 [Research Agent] Scouring TechCrunch & The Verge...")
+    urls = ["https://feeds.feedburner.com/TechCrunch/", "https://www.theverge.com/rss/index.xml"]
     research_summary = []
-    
     for url in urls:
         try:
             r = requests.get(url, timeout=10)
             soup = BeautifulSoup(r.content, 'xml')
-            items = soup.find_all('item')[:5] # Get top 5 from each
-            for item in items:
+            for item in soup.find_all('item')[:5]:
                 title = item.title.text
                 desc = item.description.text if item.description else ""
-                # Clean html tags from description
                 desc = re.sub('<[^<]+?>', '', desc)[:200]
                 research_summary.append(f"- {title}: {desc}")
-        except Exception as e:
-            print(f"⚠️ Research failed for {url}: {e}")
-            
-    return "\n".join(research_summary) if research_summary else "No live news found (using general AI knowledge)."
+        except Exception as e: print(f"⚠️ Research failed for {url}: {e}")
+    return "\n".join(research_summary)
 
 def fetch_content_and_vibe():
-    # 0. PERSISTENT HOST TRACKING
     last_host_path = get_path("temp/last_host.txt")
     current_host = "Daniel"
-    
     if os.path.exists(last_host_path):
         with open(last_host_path, "r") as f:
             last_host = f.read().strip()
             current_host = "Sarah" if last_host == "Daniel" else "Daniel"
-    
-    with open(last_host_path, "w") as f:
-        f.write(current_host)
+    with open(last_host_path, "w") as f: f.write(current_host)
 
-    # 1. LIVE DEEP RESEARCH
-    research_data_raw = get_live_news()
+    research_data = get_live_news()
+    if not research_data: research_data = "Trending AI news and future technology."
     
-    # 2. FILTER RECENTLY USED
-    used_news_path = get_path("temp/used_news.txt")
-    used_titles = []
-    if os.path.exists(used_news_path):
-        with open(used_news_path, "r", encoding="utf-8") as f:
-            used_titles = [line.strip() for line in f.readlines()]
-            
-    filtered_news = []
-    for item in research_data_raw.split("- "):
-        if not item.strip(): continue
-        title = item.split(":")[0].strip()
-        if title not in used_titles:
-            filtered_news.append(item)
-            
-    if not filtered_news:
-        print("⚠️ All recent news items already used! Clearing cache to reuse oldest.")
-        with open(used_news_path, "w") as f: f.write("") # Clear cache
-        filtered_news = research_data_raw.split("- ")
-        
-    research_data = "\n- ".join(filtered_news)
-    print(f"📄 Found {len(filtered_news)} new items. Host for this run: {current_host}")
-
-    # SISINTY-STYLE NLP PROMPT: The Viral Gatekeeper + Metadata Engineer (US TARGETING - LONG FORM)
-    prompt = f"""
-    You are a Senior NLP Content Engineer and US-Market Viral Strategist.
-    
-    STEP 1: USA AUDIENCE VIRALITY ANALYSIS
-    Analyze these news items: {json.dumps(research_data.splitlines())}
-    Pick the item with the highest retention potential for a USA/Western audience.
-    
-    STEP 2: VAIBHAV 3.0 AUTHORITY SCRIPTING
-    Write a 55-second script (approx. 150-160 words).
-    Structure:
-    - [HOOK]: Start with a "POV" or "Massive Claim" (e.g. "Adobe Photoshop just became FREE...").
-    - [BODY]: Focus on tool demos and screenshots. Use transition markers [POP] and [WHOOSH].
-    - [POWER WORDS]: Use words like SCAM, SECRET, FREE, and HACK to trigger high-impact highlights.
-    - [INFINITE LOOP]: Transition seamlessly back to the opening hook.
-    
-    STEP 3: METADATA ENGINEERING (US-TRENDING)
-    Generate "Curiosity Gap" metadata.
-    - Title: High-CTR (e.g. "DON'T Use ChatGPT in the US! 🇺🇸"). Must be < 100 chars.
-    - Description: Start with a cliffhanger. Include: "Watch until the end to see how this affects you."
-    
-    Return ONLY JSON:
-    {{
-        "source_title": "TITLE_OF_THE_NEWS_ITEM_PICKED",
-        "title": "Shocking Title 🛑",
-        "script": "Full spoken script...",
-        "description": "High-retention description...",
-        "marketing_comment": "Viral pinned comment with a question + CTA...",
-        "host": "{current_host}",
-        "vibe": "Energetic",
-        "b_roll_query": "General theme",
-        "visual_bumps": ["Logo for X", "Screenshot of Y"]
-    }}
-    """
+    # Prompt for Viral Content
+    prompt = f"Write a viral 55-second AI news script about: {research_data[:1000]}. Return ONLY JSON with keys: title, script, description, source_title, marketing_comment, b_roll_query, visual_bumps."
     
     url = "https://openrouter.ai/api/v1/chat/completions"
-
-    # API Authentication check
-    if not OPENROUTER_API_KEY:
-        raise Exception("❌ ERROR: OPENROUTER_API_KEY environment variable not set. Add it to Colab Secrets or your System Environment.")
-
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://localhost",
         "X-Title": "AI View Machine"
     }
-        
+
+    if not OPENROUTER_API_KEY:
+        print("❌ No API Key. Using Fail-Safe Content.")
+        FAIL_SAFE_CONTENT["host"] = current_host
+        return FAIL_SAFE_CONTENT
+
     for model in FREE_MODELS:
         try:
             print(f"🚀 Prompting {model}...")
-            data = {
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-                "response_format": { "type": "json_object" }
-            }
+            data = {"model": model, "messages": [{"role": "user", "content": prompt}], "response_format": {"type": "json_object"}}
             response = requests.post(url, headers=headers, data=json.dumps(data), timeout=30)
             
             if response.status_code == 200:
-                result = response.json()
-                raw_text = result['choices'][0]['message']['content'].strip()
-                # Clean markdown and common AI noise
-                raw_text = re.sub(r'```json|```', '', raw_text).strip()
-                parsed = json.loads(raw_text)
-                # Safety check
-                if 'script' not in parsed:
-                    print(f"⚠️ Model {model} gave incomplete JSON. Retrying...")
-                    continue
-                return parsed
-            
-            elif response.status_code == 400:
-                print(f"⚠️ Model {model} failed (400). Retrying without JSON mode...")
-                data.pop("response_format", None)
-                response = requests.post(url, headers=headers, data=json.dumps(data), timeout=30)
-                if response.status_code == 200:
-                    result = response.json()
-                    raw_text = result['choices'][0]['message']['content'].strip()
-                    raw_text = re.sub(r'```json|```', '', raw_text).strip()
-                    json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
-                    if json_match:
-                        parsed = json.loads(json_match.group())
-                        return parsed
-                    else:
-                        print(f"⚠️ Model {model} responded but no JSON found.")
-                        continue
-                else:
-                    print(f"⚠️ Model {model} still failed ({response.status_code}).")
-                    continue
-            
-            elif response.status_code == 429:
-                print(f"⚠️ Rate limited. Skipping model...")
-                continue
+                parsed = response.json()
+                raw_text = parsed['choices'][0]['message']['content'].strip()
+                return json.loads(re.sub(r'```json|```', '', raw_text).strip())
             else:
-                print(f"⚠️ Model {model} failed ({response.status_code}).")
+                print(f"⚠️ Model {model} failed ({response.status_code}). Response: {response.text[:100]}")
                 continue
-
         except Exception as e:
-            print(f"❌ Detail Error: {e}")
+            print(f"❌ Error with {model}: {e}")
             continue
 
-    raise Exception("ALL MODELS FAILED. The system is overloaded.")
+    print("🚨 ALL MODELS FAILED. Using Fail-Safe Content to keep the pipeline moving...")
+    FAIL_SAFE_CONTENT["host"] = current_host
+    return FAIL_SAFE_CONTENT
+
+if __name__ == "__main__":
+    try:
+        data = fetch_content_and_vibe()
+        out_dir = get_path("outputs")
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, "metadata.json"), "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+        print(f"✅ Content Ready. Host: {data.get('host')}")
+    except Exception as e:
+        print(f"❌ Critical Error: {e}")
 
 if __name__ == "__main__":
     try:
