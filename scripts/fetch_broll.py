@@ -26,8 +26,10 @@ def fetch_broll():
     # We search for "4k b-roll [query]" to get high quality
     search_query = f"ytsearch1:4k b-roll {query}"
     
-    # FFMPEG full path from user
-    FFMPEG_EXE = r"D:\tools\ffmpeg\bin\ffmpeg.exe"
+    # DYNAMIC FFMPEG LOOKUP (Windows vs Linux)
+    FFMPEG_EXE = "ffmpeg"
+    if os.name == 'nt' and os.path.exists(r"D:\tools\ffmpeg\bin\ffmpeg.exe"):
+        FFMPEG_EXE = r"D:\tools\ffmpeg\bin\ffmpeg.exe"
     
     try:
         # Download the best video under 60 seconds

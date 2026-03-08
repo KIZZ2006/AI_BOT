@@ -18,19 +18,19 @@ def get_path(rel_path):
 def remove_bg(input_path, output_path):
     print(f"[BG_REMOVE] Attempting background removal for {input_path}...")
     
-    session = None
-    # Priority: DirectML (AMD GPU) -> CPU
     try:
         from rembg import new_session
-        print("   -> Checking for DirectML hardware acceleration...")
-        session = new_session(providers=['DmlExecutionProvider', 'CPUExecutionProvider'])
-        print("   -> DirectML Session Initialized.")
+        providers = ['CPUExecutionProvider']
+        if os.environ.get('COLAB_GPU', '0') == '1' or 'CUDA_VISIBLE_DEVICES' in os.environ:
+             print("   -> T4 GPU Detected. Using CUDA for Background Removal...")
+             providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        else:
+             print("   -> Using CPU for Background Removal...")
+        
+        session = new_session(providers=providers)
     except Exception as e:
-        print(f"   -> DirectML failed ({str(e)[:50]}). Falling back to CPU...")
-        try:
-            session = new_session(providers=['CPUExecutionProvider'])
-        except:
-            session = None # Let rembg use its default if all else fails
+        print(f"   -> Session init failed: {e}. Using default.")
+        session = None
 
     with open(input_path, 'rb') as i:
         input_data = i.read()

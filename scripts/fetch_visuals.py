@@ -4,7 +4,10 @@ import subprocess
 import sys
 from concurrent.futures import ProcessPoolExecutor
 
-FFMPEG_EXE = r"D:\tools\ffmpeg\bin\ffmpeg.exe"
+# DYNAMIC FFMPEG LOOKUP (Windows vs Linux)
+FFMPEG_EXE = "ffmpeg"
+if os.name == 'nt' and os.path.exists(r"D:\tools\ffmpeg\bin\ffmpeg.exe"):
+    FFMPEG_EXE = r"D:\tools\ffmpeg\bin\ffmpeg.exe"
 
 def get_path(rel_path):
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
